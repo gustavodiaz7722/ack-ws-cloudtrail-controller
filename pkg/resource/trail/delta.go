@@ -20,6 +20,7 @@ import (
 
 	ackcompare "github.com/aws-controllers-k8s/runtime/pkg/compare"
 	acktags "github.com/aws-controllers-k8s/runtime/pkg/tags"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 // Hack to avoid import errors during build...
@@ -56,6 +57,9 @@ func newResourceDelta(
 			delta.Add("Spec.CloudWatchLogsRoleARN", a.ko.Spec.CloudWatchLogsRoleARN, b.ko.Spec.CloudWatchLogsRoleARN)
 		}
 	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.CloudWatchLogsRoleRef, b.ko.Spec.CloudWatchLogsRoleRef) {
+		delta.Add("Spec.CloudWatchLogsRoleRef", a.ko.Spec.CloudWatchLogsRoleRef, b.ko.Spec.CloudWatchLogsRoleRef)
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.EnableLogFileValidation, b.ko.Spec.EnableLogFileValidation) {
 		delta.Add("Spec.EnableLogFileValidation", a.ko.Spec.EnableLogFileValidation, b.ko.Spec.EnableLogFileValidation)
 	} else if a.ko.Spec.EnableLogFileValidation != nil && b.ko.Spec.EnableLogFileValidation != nil {
@@ -90,6 +94,9 @@ func newResourceDelta(
 		if *a.ko.Spec.KMSKeyID != *b.ko.Spec.KMSKeyID {
 			delta.Add("Spec.KMSKeyID", a.ko.Spec.KMSKeyID, b.ko.Spec.KMSKeyID)
 		}
+	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.KMSKeyRef, b.ko.Spec.KMSKeyRef) {
+		delta.Add("Spec.KMSKeyRef", a.ko.Spec.KMSKeyRef, b.ko.Spec.KMSKeyRef)
 	}
 	if ackcompare.HasNilDifference(a.ko.Spec.Name, b.ko.Spec.Name) {
 		delta.Add("Spec.Name", a.ko.Spec.Name, b.ko.Spec.Name)

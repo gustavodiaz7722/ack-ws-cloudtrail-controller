@@ -33,7 +33,8 @@ type TrailSpec struct {
 	CloudWatchLogsLogGroupARN *string `json:"cloudWatchLogsLogGroupARN,omitempty"`
 	// Specifies the role for the CloudWatch Logs endpoint to assume to write to
 	// a user's log group. You must use a role that exists in your account.
-	CloudWatchLogsRoleARN *string `json:"cloudWatchLogsRoleARN,omitempty"`
+	CloudWatchLogsRoleARN *string                                  `json:"cloudWatchLogsRoleARN,omitempty"`
+	CloudWatchLogsRoleRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"cloudWatchLogsRoleRef,omitempty"`
 	// Specifies whether log file integrity validation is enabled. The default is
 	// false.
 	//
@@ -77,7 +78,8 @@ type TrailSpec struct {
 	//   - arn:aws:kms:us-east-2:123456789012:key/12345678-1234-1234-1234-123456789012
 	//
 	//   - 12345678-1234-1234-1234-123456789012
-	KMSKeyID *string `json:"kmsKeyID,omitempty"`
+	KMSKeyID  *string                                  `json:"kmsKeyID,omitempty"`
+	KMSKeyRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"kmsKeyRef,omitempty"`
 	// Specifies the name of the trail. The name must meet the following requirements:
 	//
 	//   - Contain only ASCII letters (a-z, A-Z), numbers (0-9), periods (.), underscores

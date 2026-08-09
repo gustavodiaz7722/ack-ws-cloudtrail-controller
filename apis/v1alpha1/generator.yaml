@@ -16,6 +16,21 @@ resources:
       Tags:
         compare:
           is_ignored: true
+      CloudWatchLogsRoleARN:
+        references:
+          resource: Role
+          service_name: iam
+          path: Status.ACKResourceMetadata.ARN
+      # GetTrail always echoes the fully specified key ARN back, whichever of
+      # the four accepted input forms was sent, so the ARN is the only path that
+      # converges. kms also manages an Alias Kind, but an Alias-targeted
+      # reference would resolve to a form the read-back never matches; users who
+      # want an alias keep using the concrete field.
+      KMSKeyID:
+        references:
+          resource: Key
+          service_name: kms
+          path: Status.ACKResourceMetadata.ARN
     renames:
       operations:
         CreateTrail:
