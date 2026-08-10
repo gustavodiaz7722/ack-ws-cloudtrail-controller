@@ -884,6 +884,11 @@ func (in *TrailSpec) DeepCopyInto(out *TrailSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.CloudWatchLogsRoleRef != nil {
+		in, out := &in.CloudWatchLogsRoleRef, &out.CloudWatchLogsRoleRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.EnableLogFileValidation != nil {
 		in, out := &in.EnableLogFileValidation, &out.EnableLogFileValidation
 		*out = new(bool)
@@ -908,6 +913,11 @@ func (in *TrailSpec) DeepCopyInto(out *TrailSpec) {
 		in, out := &in.KMSKeyID, &out.KMSKeyID
 		*out = new(string)
 		**out = **in
+	}
+	if in.KMSKeyRef != nil {
+		in, out := &in.KMSKeyRef, &out.KMSKeyRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Name != nil {
 		in, out := &in.Name, &out.Name
