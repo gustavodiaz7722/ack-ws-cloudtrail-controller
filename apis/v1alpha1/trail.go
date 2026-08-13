@@ -101,8 +101,8 @@ type TrailSpec struct {
 	// files. For information about bucket naming rules, see Bucket naming rules
 	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html)
 	// in the Amazon Simple Storage Service User Guide.
-	// +kubebuilder:validation:Required
-	S3BucketName *string `json:"s3BucketName"`
+	S3BucketName *string                                  `json:"s3BucketName,omitempty"`
+	S3BucketRef  *ackv1alpha1.AWSResourceReferenceWrapper `json:"s3BucketRef,omitempty"`
 	// Specifies the Amazon S3 key prefix that comes after the name of the bucket
 	// you have designated for log file delivery. For more information, see Finding
 	// Your CloudTrail Log Files (https://docs.aws.amazon.com/awscloudtrail/latest/userguide/get-and-view-cloudtrail-log-files.html#cloudtrail-find-log-files).

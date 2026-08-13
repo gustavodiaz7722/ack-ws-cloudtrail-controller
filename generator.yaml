@@ -31,6 +31,13 @@ resources:
           resource: Key
           service_name: kms
           path: Status.ACKResourceMetadata.ARN
+      # The bare bucket name, not the ARN: CreateTrail takes a name and GetTrail
+      # echoes a name back, so an ARN path would never converge.
+      S3BucketName:
+        references:
+          resource: Bucket
+          service_name: s3
+          path: Spec.Name
     renames:
       operations:
         CreateTrail:
