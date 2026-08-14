@@ -112,6 +112,9 @@ func newResourceDelta(
 			delta.Add("Spec.S3BucketName", a.ko.Spec.S3BucketName, b.ko.Spec.S3BucketName)
 		}
 	}
+	if !equality.Semantic.Equalities.DeepEqual(a.ko.Spec.S3BucketRef, b.ko.Spec.S3BucketRef) {
+		delta.Add("Spec.S3BucketRef", a.ko.Spec.S3BucketRef, b.ko.Spec.S3BucketRef)
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.S3KeyPrefix, b.ko.Spec.S3KeyPrefix) {
 		delta.Add("Spec.S3KeyPrefix", a.ko.Spec.S3KeyPrefix, b.ko.Spec.S3KeyPrefix)
 	} else if a.ko.Spec.S3KeyPrefix != nil && b.ko.Spec.S3KeyPrefix != nil {

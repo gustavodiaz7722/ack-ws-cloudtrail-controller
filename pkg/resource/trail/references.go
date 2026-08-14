@@ -29,6 +29,7 @@ import (
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrt "github.com/aws-controllers-k8s/runtime/pkg/runtime"
 	acktypes "github.com/aws-controllers-k8s/runtime/pkg/types"
+	s3apitypes "github.com/aws-controllers-k8s/s3-controller/apis/v1alpha1"
 
 	svcapitypes "github.com/aws-controllers-k8s/cloudtrail-controller/apis/v1alpha1"
 )
@@ -38,6 +39,9 @@ import (
 
 // +kubebuilder:rbac:groups=kms.services.k8s.aws,resources=keys,verbs=get;list
 // +kubebuilder:rbac:groups=kms.services.k8s.aws,resources=keys/status,verbs=get;list
+
+// +kubebuilder:rbac:groups=s3.services.k8s.aws,resources=buckets,verbs=get;list
+// +kubebuilder:rbac:groups=s3.services.k8s.aws,resources=buckets/status,verbs=get;list
 
 // ClearResolvedReferences removes any reference values that were made
 // concrete in the spec. It returns a copy of the input AWSResource which
@@ -52,6 +56,10 @@ func (rm *resourceManager) ClearResolvedReferences(res acktypes.AWSResource) ack
 
 	if ko.Spec.KMSKeyRef != nil {
 		ko.Spec.KMSKeyID = nil
+	}
+
+	if ko.Spec.S3BucketRef != nil {
+		ko.Spec.S3BucketName = nil
 	}
 
 	return &resource{ko}
@@ -85,6 +93,12 @@ func (rm *resourceManager) ResolveReferences(
 		resourceHasReferences = resourceHasReferences || fieldHasReferences
 	}
 
+	if fieldHasReferences, err := rm.resolveReferenceForS3BucketName(ctx, apiReader, ko); err != nil {
+		return &resource{ko}, (resourceHasReferences || fieldHasReferences), err
+	} else {
+		resourceHasReferences = resourceHasReferences || fieldHasReferences
+	}
+
 	return &resource{ko}, resourceHasReferences, err
 }
 
@@ -98,6 +112,13 @@ func validateReferenceFields(ko *svcapitypes.Trail) error {
 
 	if ko.Spec.KMSKeyRef != nil && ko.Spec.KMSKeyID != nil {
 		return ackerr.ResourceReferenceAndIDNotSupportedFor("KMSKeyID", "KMSKeyRef")
+	}
+
+	if ko.Spec.S3BucketRef != nil && ko.Spec.S3BucketName != nil {
+		return ackerr.ResourceReferenceAndIDNotSupportedFor("S3BucketName", "S3BucketRef")
+	}
+	if ko.Spec.S3BucketRef == nil && ko.Spec.S3BucketName == nil {
+		return ackerr.ResourceReferenceOrIDRequiredFor("S3BucketName", "S3BucketRef")
 	}
 	return nil
 }
@@ -280,6 +301,97 @@ func getReferencedResourceState_Key(
 			"Key",
 			namespace, name,
 			"Status.ACKResourceMetadata.ARN")
+	}
+	return nil
+}
+
+// resolveReferenceForS3BucketName reads the resource referenced
+// from S3BucketRef field and sets the S3BucketName
+// from referenced resource. Returns a boolean indicating whether a reference
+// contains references, or an error
+func (rm *resourceManager) resolveReferenceForS3BucketName(
+	ctx context.Context,
+	apiReader client.Reader,
+	ko *svcapitypes.Trail,
+) (hasReferences bool, err error) {
+	if ko.Spec.S3BucketRef != nil && ko.Spec.S3BucketRef.From != nil {
+		hasReferences = true
+		arr := ko.Spec.S3BucketRef.From
+		if arr.Name == nil || *arr.Name == "" {
+			return hasReferences, fmt.Errorf("provided resource reference is nil or empty: S3BucketRef")
+		}
+		namespace, err := ackrt.ResolveCrossNamespaceReference(
+			ctx,
+			rm.cfg.EnableCrossNamespace,
+			&ko.Status.Conditions,
+			ackrt.CrossNamespaceRefKindResource,
+			ko.ObjectMeta.GetNamespace(),
+			arr.Namespace,
+			*arr.Name,
+		)
+		if err != nil {
+			return hasReferences, err
+		}
+		obj := &s3apitypes.Bucket{}
+		if err := getReferencedResourceState_Bucket(ctx, apiReader, obj, *arr.Name, namespace); err != nil {
+			return hasReferences, err
+		}
+		ko.Spec.S3BucketName = (*string)(obj.Spec.Name)
+	}
+
+	return hasReferences, nil
+}
+
+// getReferencedResourceState_Bucket looks up whether a referenced resource
+// exists and is in a ACK.ResourceSynced=True state. If the referenced resource does exist and is
+// in a Synced state, returns nil, otherwise returns `ackerr.ResourceReferenceTerminalFor` or
+// `ResourceReferenceNotSyncedFor` depending on if the resource is in a Terminal state.
+func getReferencedResourceState_Bucket(
+	ctx context.Context,
+	apiReader client.Reader,
+	obj *s3apitypes.Bucket,
+	name string, // the Kubernetes name of the referenced resource
+	namespace string, // the Kubernetes namespace of the referenced resource
+) error {
+	namespacedName := types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}
+	err := apiReader.Get(ctx, namespacedName, obj)
+	if err != nil {
+		return err
+	}
+	var refResourceTerminal bool
+	for _, cond := range obj.Status.Conditions {
+		if cond.Type == ackv1alpha1.ConditionTypeTerminal &&
+			cond.Status == corev1.ConditionTrue {
+			return ackerr.ResourceReferenceTerminalFor(
+				"Bucket",
+				namespace, name)
+		}
+	}
+	if refResourceTerminal {
+		return ackerr.ResourceReferenceTerminalFor(
+			"Bucket",
+			namespace, name)
+	}
+	var refResourceSynced bool
+	for _, cond := range obj.Status.Conditions {
+		if cond.Type == ackv1alpha1.ConditionTypeResourceSynced &&
+			cond.Status == corev1.ConditionTrue {
+			refResourceSynced = true
+		}
+	}
+	if !refResourceSynced {
+		return ackerr.ResourceReferenceNotSyncedFor(
+			"Bucket",
+			namespace, name)
+	}
+	if obj.Spec.Name == nil {
+		return ackerr.ResourceReferenceMissingTargetFieldFor(
+			"Bucket",
+			namespace, name,
+			"Spec.Name")
 	}
 	return nil
 }

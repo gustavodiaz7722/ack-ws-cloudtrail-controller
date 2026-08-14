@@ -929,6 +929,11 @@ func (in *TrailSpec) DeepCopyInto(out *TrailSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.S3BucketRef != nil {
+		in, out := &in.S3BucketRef, &out.S3BucketRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.S3KeyPrefix != nil {
 		in, out := &in.S3KeyPrefix, &out.S3KeyPrefix
 		*out = new(string)
